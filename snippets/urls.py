@@ -8,5 +8,5 @@ urlpatterns = [
 
 
 """
-We also need to wire up the root urlconf, in the tutorial/urls.py file, to include our snippet app's URLs.
+We also need to wire up the root urlconf, in the mainApi/urls.py file, to include our snippet app's URLs.
 """
