@@ -20,3 +20,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('snippets.urls')),
 ]
+
+# we now move to requests and responses
+# we are going to edit the views of our REST API
