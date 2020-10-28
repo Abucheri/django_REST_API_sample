@@ -5,6 +5,8 @@ to Django's forms. Create a file in the snippets directory named serializers.py
 """
 from rest_framework import serializers
 from .models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
+# importing auth model for user serializer
+from django.contrib.auth.models import User
 
 
 # class SnippetSerializer(serializers.Serializer):
@@ -37,10 +39,35 @@ from .models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
 
 # using a ModelSerializers
 class SnippetSerializer(serializers.ModelSerializer):
+    """
+
+    Updating our serializer
+
+    Now that snippets are associated with the user that created them, let's update our SnippetSerializer to reflect that.
+    Add the following field to the serializer definition in serializers.py:
+        owner = serializers.ReadOnlyField(source='owner.username')
+
+    Note: Make sure you also add 'owner', to the list of fields in the inner Meta class.
+
+    This field is doing something quite interesting. The source argument controls which attribute is used to populate
+    a field, and can point at any attribute on the serialized instance. It can also take the dotted notation shown
+    above, in which case it will traverse the given attributes, in a similar way as it is used with Django's template
+    language.
+
+    The field we've added is the untyped ReadOnlyField class, in contrast to the other typed fields,
+    such as CharField, BooleanField etc... The untyped ReadOnlyField is always read-only, and will be used for
+    serialized representations, but will not be used for updating model instances when they are deserialized. We
+    could have also used 'CharField(read_only=True)' here.
+
+    """
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = Snippet
         # fields = ['url', 'id', 'title', 'code', 'linenos', 'language', 'language', 'style']
-        fields = ['id', 'title', 'code', 'linenos', 'language', 'language', 'style']
+        fields = ['id', 'owner', 'title', 'code', 'linenos', 'language', 'language', 'style']
+
+        # now we will go on to add required permissions to views after associating users
 
 
 """
@@ -159,7 +186,6 @@ print(repr(serializer))
 #    style = ChoiceField(choices=[('autumn', 'autumn'), ('borland', 'borland'), ('bw', 'bw'), ('colorful', 'colorful')... 
 """
 
-
 """
 It's important to remember that ModelSerializer classes don't do anything particularly magical, they are simply a 
 shortcut for creating serializer classes: 
@@ -168,3 +194,42 @@ shortcut for creating serializer classes:
     Simple default implementations for the create() and update() methods.
 
 """
+
+"""
+
+Adding endpoints for our User models
+
+Now that we've got some users to work with, we'd better add representations of those users to our API. Creating a new 
+serializer is easy. In serializers.py add: 
+
+    from django.contrib.auth.models import User
+    
+    class UserSerializer(serializers.ModelSerializer):
+        snippets = serializers.PrimaryKeyRelatedField(many=True, queryset=Snippet.objects.all())
+    
+        class Meta:
+            model = User
+            fields = ['id', 'username', 'snippets']
+
+"""
+
+
+class UserSerializer(serializers.ModelSerializer):
+    snippets = serializers.PrimaryKeyRelatedField(many=True, queryset=Snippet.objects.all())
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'snippets']
+
+
+"""
+
+Because 'snippets' is a reverse relationship on the User model, it will not be included by default when using the 
+ModelSerializer class, so we needed to add an explicit field for it. 
+
+We'll also add a couple of views to views.py. We'd like to just use read-only views for the user representations, 
+so we'll use the ListAPIView and RetrieveAPIView generic class-based views. 
+
+"""
+
+# off to views.py

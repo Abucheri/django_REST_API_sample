@@ -3,7 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.parsers import JSONParser
 from .models import Snippet
-from .serializers import SnippetSerializer
+from .serializers import SnippetSerializer, UserSerializer
 # working with requests and responses
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -12,7 +12,11 @@ from rest_framework.response import Response
 from django.http import Http404
 from rest_framework.views import APIView
 # implementing mixins for our class-based views to handle CRUD instead of using individual functions
-from rest_framework import mixins, generics
+from rest_framework import mixins, generics, permissions
+# importing the auth model for API authentication
+from django.contrib.auth.models import User
+# importing permissions from snippets/permissions.py to implement our permissions class for snippet editing
+from .permissions import IsOwnerOrReadOnly
 
 """
 Writing regular Django views using our Serializer
@@ -427,11 +431,127 @@ module even more.
 class SnippetList(generics.ListCreateAPIView):
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    """
+    
+    Associating Snippets with Users
+
+    Right now, if we created a code snippet, there'd be no way of associating the user that created the snippet, 
+    with the snippet instance. The user isn't sent as part of the serialized representation, but is instead a 
+    property of the incoming request. 
+    
+    The way we deal with that is by overriding a .perform_create() method on our snippet views, that allows us to 
+    modify how the instance save is managed, and handle any information that is implicit in the incoming request or 
+    requested URL. 
+    
+    On the SnippetList view class, add the following method:
+    
+        def perform_create(self, serializer):
+            serializer.save(owner=self.request.user)
+            
+    NB: after adding the urls for user views API
+    
+    """
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+        # The create() method of our serializer will now be passed an additional 'owner' field, along with the
+        # validated data from the request. now we will go and update our SnippetSerializer class now that the
+        # snippets are associated to the user that created them
 
 
 class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly,
+                          IsOwnerOrReadOnly]
+
 
 # Wow, that's pretty concise. We've gotten a huge amount for free, and our code looks like good, clean,
 # idiomatic Django.
+
+# Now we are going to take a look at authentication and permissions for our app
+# we will now edit our model to implement user.auth
+
+"""
+
+we will first import the auth model and add generic class-based views for Users
+we will also import the user serializer that we created
+Make sure to also import the UserSerializer class
+
+    from snippets.serializers import UserSerializer
+
+"""
+
+
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+"""
+
+Finally we need to add those views into the API, by referencing them from the URL conf. Add the following to the patterns in snippets/urls.py.
+
+    path('users/', views.UserList.as_view()),
+    path('users/<int:pk>/', views.UserDetail.as_view()),
+
+"""
+
+# we will now go on and add the urls in snippets/urls.py
+
+# from enabling association with owner at snippets/serializers.py
+"""
+
+Adding required permissions to views
+
+Now that code snippets are associated with users, we want to make sure that only authenticated users are able to 
+create, update and delete code snippets. 
+
+REST framework includes a number of permission classes that we can use to restrict who can access a given view. In 
+this case the one we're looking for is IsAuthenticatedOrReadOnly, which will ensure that authenticated requests get 
+read-write access, and unauthenticated requests get read-only access. 
+
+First add the following import in the views module
+
+    from rest_framework import permissions
+
+Then, add the following property to both the SnippetList and SnippetDetail view classes.
+
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+"""
+
+"""
+
+Adding login to the Browsable API
+
+If you open a browser and navigate to the browsable API at the moment, you'll find that you're no longer able to 
+create new code snippets. In order to do so we'd need to be able to login as a user. 
+
+We can add a login view for use with the browsable API, by editing the URLconf in our 'project-level urls.py' file.
+
+Add the following import at the top of the file:
+
+    from django.urls import path, include
+
+And, at the end of the file, add a pattern to include the login and logout views for the browsable API.
+
+    urlpatterns += [
+        path('api-auth/', include('rest_framework.urls')),
+    ]
+
+The 'api-auth/' part of pattern can actually be whatever URL you want to use.
+
+Now if you open up the browser again and refresh the page you'll see a 'Login' link in the top right of the page. If 
+you log in as one of the users you created earlier, you'll be able to create code snippets again. 
+
+Once you've created a few code snippets, navigate to the '/users/' endpoint, and notice that the representation 
+includes a list of the snippet ids that are associated with each user, in each user's 'snippets' field 
+
+"""

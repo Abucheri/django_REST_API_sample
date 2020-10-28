@@ -21,5 +21,14 @@ urlpatterns = [
     path('', include('snippets.urls')),
 ]
 
+# this is good so far since only authenticated users are able to edit snippets but we need to create permissions to
+# make sure that only the user that created a particular snippet can edit it, not all authenticated users. we'll add
+# a snippets/permissions.py to do this
+
 # we now move to requests and responses
 # we are going to edit the views of our REST API
+
+# adding url patterns for the browsableAPI for user authentication
+urlpatterns += [
+    path('api-auth/', include('rest_framework.urls')),
+]

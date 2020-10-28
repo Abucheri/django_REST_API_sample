@@ -107,6 +107,11 @@ dramatically lowers the barrier-to-entry for other developers wanting to inspect
 urlpatterns = [
     path('snippets/', views.SnippetList.as_view()),
     path('snippets/<int:pk>/', views.SnippetDetail.as_view()),
+    # adding path for user API views
+    path('users/', views.UserList.as_view()),
+    path('users/<int:pk>/', views.UserDetail.as_view()),
+    # now what is remaining is associating a snippet with the respective user, we will now edit the SnippetList class in
+    # snippets/views.py to implement this
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
