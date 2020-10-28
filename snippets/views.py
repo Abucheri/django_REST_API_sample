@@ -8,6 +8,11 @@ from .serializers import SnippetSerializer
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+# enabling class-based views
+from django.http import Http404
+from rest_framework.views import APIView
+# implementing mixins for our class-based views to handle CRUD instead of using individual functions
+from rest_framework import mixins, generics
 
 """
 Writing regular Django views using our Serializer
@@ -202,23 +207,22 @@ Okay, let's go ahead and start using these new components to refactor our views 
 
 """
 
-
-@api_view(['GET', 'POST'])
-def snippet_list(request, format=None):
-    """
-    List all code snippets, or create a new snippet.
-    """
-    if request.method == 'GET':
-        snippets = Snippet.objects.all()
-        serializer = SnippetSerializer(snippets, many=True)
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        serializer = SnippetSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# @api_view(['GET', 'POST'])
+# def snippet_list(request, format=None):
+#     """
+#     List all code snippets, or create a new snippet.
+#     """
+#     if request.method == 'GET':
+#         snippets = Snippet.objects.all()
+#         serializer = SnippetSerializer(snippets, many=True)
+#         return Response(serializer.data)
+#
+#     elif request.method == 'POST':
+#         serializer = SnippetSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Our instance view is an improvement over the previous example. It's a little more concise, and the code now feels
@@ -226,30 +230,30 @@ def snippet_list(request, format=None):
 # response meanings more obvious.
 #
 # Here is the view for an individual snippet (snippet details), in the views.py module.
-@api_view(['GET', 'PUT', 'DELETE'])
-def snippet_detail(request, pk, format=None):
-    """
-    Retrieve, update or delete a code snippet.
-    """
-    try:
-        snippet = Snippet.objects.get(pk=pk)
-    except Snippet.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = SnippetSerializer(snippet)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        serializer = SnippetSerializer(snippet, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        snippet.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+# @api_view(['GET', 'PUT', 'DELETE'])
+# def snippet_detail(request, pk, format=None):
+#     """
+#     Retrieve, update or delete a code snippet.
+#     """
+#     try:
+#         snippet = Snippet.objects.get(pk=pk)
+#     except Snippet.DoesNotExist:
+#         return Response(status=status.HTTP_404_NOT_FOUND)
+#
+#     if request.method == 'GET':
+#         serializer = SnippetSerializer(snippet)
+#         return Response(serializer.data)
+#
+#     elif request.method == 'PUT':
+#         serializer = SnippetSerializer(snippet, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+#     elif request.method == 'DELETE':
+#         snippet.delete()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 """
@@ -280,3 +284,154 @@ and
 
 """
 # now lets move to our urls file to add suffix patterns
+
+"""
+
+Class-based Views
+
+We can also write our API views using class-based views, rather than function based views. As we'll see this is a 
+powerful pattern that allows us to reuse common functionality, and helps us keep our code DRY (Don't Repeat Yourself). 
+
+Rewriting our API using class-based views 
+
+We'll start by rewriting the root view as a class-based view. All this involves is a little bit of refactoring of 
+views.py. 
+
+"""
+
+# class SnippetList(APIView):
+#     """
+#     List all snippets, or create a new snippet.
+#     """
+#
+#     def get(self, request, format=None):
+#         snippets = Snippet.objects.all()
+#         serializer = SnippetSerializer(snippets, many=True)
+#         return Response(serializer.data)
+#
+#     def post(self, request, format=None):
+#         serializer = SnippetSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+"""
+
+So far, so good. It looks pretty similar to the previous case, but we've got better separation between the different 
+HTTP methods. We'll also need to update the instance view in views.py. 
+
+"""
+
+# class SnippetDetail(APIView):
+#     """
+#     Retrieve, update or delete a snippet instance.
+#     """
+#     def get_object(self, pk):
+#         try:
+#             return Snippet.objects.get(pk=pk)
+#         except Snippet.DoesNotExist:
+#             raise Http404
+#
+#     def get(self, request, pk, format=None):
+#         snippet = self.get_object(pk)
+#         serializer = SnippetSerializer(snippet)
+#         return Response(serializer.data)
+#
+#     def put(self, request, pk, format=None):
+#         snippet = self.get_object(pk)
+#         serializer = SnippetSerializer(snippet, data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#
+#     def delete(self, request, pk, format=None):
+#         snippet = self.get_object(pk)
+#         snippet.delete()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
+
+# That's looking good. Again, it's still pretty similar to the function based view right now.
+#
+# We'll also need to refactor our snippets/urls.py slightly now that we're using class-based views.
+
+"""
+
+Using mixins
+
+One of the big wins of using class-based views is that it allows us to easily compose reusable bits of behaviour.
+
+The create/retrieve/update/delete operations that we've been using so far are going to be pretty similar for any 
+model-backed API views we create. Those bits of common behaviour are implemented in REST framework's mixin classes. 
+
+Let's take a look at how we can compose the views by using the mixin classes. Here's our views.py module again.
+
+"""
+
+# class SnippetList(mixins.ListModelMixin,
+#                   mixins.CreateModelMixin,
+#                   generics.GenericAPIView):
+#     queryset = Snippet.objects.all()
+#     serializer_class = SnippetSerializer
+#
+#     def get(self, request, *args, **kwargs):
+#         return self.list(request, *args, **kwargs)
+#
+#     def post(self, requset, *args, **kwargs):
+#         return self.create(requset, *args, **kwargs)
+
+
+"""
+
+We'll take a moment to examine exactly what's happening here. We're building our view using GenericAPIView, 
+and adding in ListModelMixin and CreateModelMixin. 
+
+The base class provides the core functionality, and the mixin classes provide the .list() and .create() actions. 
+We're then explicitly binding the get and post methods to the appropriate actions. Simple enough stuff so far. 
+
+"""
+
+# class SnippetDetail(mixins.RetrieveModelMixin,
+#                     mixins.UpdateModelMixin,
+#                     mixins.DestroyModelMixin,
+#                     generics.GenericAPIView):
+#     queryset = Snippet.objects.all()
+#     serializer_class = SnippetSerializer
+#
+#     def get(self, request, *args, **kwargs):
+#         return self.retrieve(request, *args, **kwargs)
+#
+#     def put(self, request, *args, **kwargs):
+#         return self.update(request, *args, **kwargs)
+#
+#     def delete(self, request, *args, **kwargs):
+#         return self.destroy(request, *args, **kwargs)
+
+# Pretty similar. Again we're using the GenericAPIView class to provide the core functionality
+# and adding in mixins to provide the .retrieve(), .update() and .destroy() actions.
+
+# still working wih views
+
+"""
+
+Using generic class-based views
+
+Using the mixin classes we've rewritten the views to use slightly less code than before, but we can go one step 
+further. REST framework provides a set of already mixed-in generic views that we can use to trim down our views.py 
+module even more. 
+
+"""
+
+
+class SnippetList(generics.ListCreateAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+
+
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+
+# Wow, that's pretty concise. We've gotten a huge amount for free, and our code looks like good, clean,
+# idiomatic Django.

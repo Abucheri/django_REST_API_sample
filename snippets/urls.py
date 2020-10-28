@@ -2,10 +2,10 @@ from django.urls import path
 from . import views
 from rest_framework.urlpatterns import format_suffix_patterns
 
-urlpatterns = [
-    path('snippets/', views.snippet_list),
-    path('snippets/<int:pk>/', views.snippet_detail),
-]
+# urlpatterns = [
+#     path('snippets/', views.snippet_list),
+#     path('snippets/<int:pk>/', views.snippet_detail),
+# ]
 
 """
 We also need to wire up the root urlconf, in the mainApi/urls.py file, to include our snippet app's URLs.
@@ -13,7 +13,9 @@ We also need to wire up the root urlconf, in the mainApi/urls.py file, to includ
 
 # Now update the snippets/urls.py file slightly, to append a set of format_suffix_patterns in addition to the
 # existing URLs.
-urlpatterns = format_suffix_patterns(urlpatterns)
+
+# urlpatterns = format_suffix_patterns(urlpatterns)
+
 # We don't necessarily need to add these extra url patterns in, but it gives us a simple, clean way of referring to a
 # specific format.
 
@@ -98,3 +100,16 @@ Having a web-browsable API is a huge usability win, and makes developing and usi
 dramatically lowers the barrier-to-entry for other developers wanting to inspect and work with your API. 
 
 """
+
+# going to views to add class-based views to snippets/views.py
+
+# Refactoring urls for class based views
+urlpatterns = [
+    path('snippets/', views.SnippetList.as_view()),
+    path('snippets/<int:pk>/', views.SnippetDetail.as_view()),
+]
+
+urlpatterns = format_suffix_patterns(urlpatterns)
+
+# Okay, we're done. If you run the development server everything should be working just as before.
+# we are now going to create mixins for our views to implement CRUD without using functions
