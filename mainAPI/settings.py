@@ -126,3 +126,42 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+"""
+
+Adding pagination
+
+The list views for users and code snippets could end up returning quite a lot of instances, so really we'd like to 
+make sure we paginate the results, and allow the API client to step through each of the individual pages. 
+
+We can change the default list style to use pagination, by modifying our tutorial/settings.py file slightly. Add the 
+following setting: 
+
+    REST_FRAMEWORK = {
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+        'PAGE_SIZE': 10
+    }
+
+Note that settings in REST framework are all namespaced into a single dictionary setting, named REST_FRAMEWORK, 
+which helps keep them well separated from your other project settings. 
+
+We could also customize the pagination style if we needed too, but in this case we'll just stick with the default.
+
+"""
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
+
+"""
+
+Browsing the API
+
+If we open a browser and navigate to the browsable API, you'll find that you can now work your way around the API 
+simply by following links. 
+
+You'll also be able to see the 'highlight' links on the snippet instances, that will take you to the highlighted code 
+HTML representations. 
+
+"""

@@ -12,11 +12,13 @@ from rest_framework.response import Response
 from django.http import Http404
 from rest_framework.views import APIView
 # implementing mixins for our class-based views to handle CRUD instead of using individual functions
-from rest_framework import mixins, generics, permissions
+from rest_framework import mixins, generics, permissions, renderers
 # importing the auth model for API authentication
 from django.contrib.auth.models import User
 # importing permissions from snippets/permissions.py to implement our permissions class for snippet editing
 from .permissions import IsOwnerOrReadOnly
+# importing reverse for the root of our API
+from rest_framework.reverse import reverse
 
 """
 Writing regular Django views using our Serializer
@@ -452,6 +454,7 @@ class SnippetList(generics.ListCreateAPIView):
     NB: after adding the urls for user views API
     
     """
+
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
         # The create() method of our serializer will now be passed an additional 'owner' field, along with the
@@ -553,5 +556,74 @@ you log in as one of the users you created earlier, you'll be able to create cod
 
 Once you've created a few code snippets, navigate to the '/users/' endpoint, and notice that the representation 
 includes a list of the snippet ids that are associated with each user, in each user's 'snippets' field 
+
+"""
+
+"""
+
+Relationships & Hyperlinked APIs
+
+At the moment relationships within our API are represented by using primary keys. In this part of the tutorial we'll 
+improve the cohesion and discoverability of our API, by instead using hyperlinking for relationships. 
+
+Creating an endpoint for the root of our API 
+
+Right now we have endpoints for 'snippets' and 'users', but we don't have a single entry point to our API. To create 
+one, we'll use a regular function-based view and the @api_view decorator we introduced earlier. In your 
+snippets/views.py add 
+
+"""
+
+
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'users': reverse('user-list', request=request, format=format),
+        'snippets': reverse('snippet-list', request=request, format=format),
+    })
+
+
+# Two things should be noticed here. First, we're using REST framework's reverse function in order to return
+# fully-qualified URLs; second, URL patterns are identified by convenience names that we will declare later on in our
+# snippets/urls.py.
+
+"""
+
+Creating an endpoint for the highlighted snippets
+
+The other obvious thing that's still missing from our pastebin API is the code highlighting endpoints.
+
+Unlike all our other API endpoints, we don't want to use JSON, but instead just present an HTML representation. There 
+are two styles of HTML renderer provided by REST framework, one for dealing with HTML rendered using templates, 
+the other for dealing with pre-rendered HTML. The second renderer is the one we'd like to use for this endpoint. 
+
+The other thing we need to consider when creating the code highlight view is that there's no existing concrete 
+generic view that we can use. We're not returning an object instance, but instead a property of an object instance. 
+
+Instead of using a concrete generic view, we'll use the base class for representing instances, and create our own 
+.get() method. In your snippets/views.py add: 
+
+"""
+
+
+class SnippetHighlight(generics.GenericAPIView):
+    queryset = Snippet.objects.all()
+    renderer_classes = [renderers.StaticHTMLRenderer]
+
+    def get(self, request, *args, **kwargs):
+        snippet = self.get_object()
+        return Response(snippet.highlighted)
+
+
+"""
+
+As usual we need to add the new views that we've created in to our URLconf. We'll add a url pattern for our new API 
+root in snippets/urls.py: 
+
+    path('', views.api_root),
+
+And then add a url pattern for the snippet highlights:
+
+    path('snippets/<int:pk>/highlight/', views.SnippetHighlight.as_view()),
 
 """

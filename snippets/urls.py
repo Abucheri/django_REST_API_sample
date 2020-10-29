@@ -104,17 +104,35 @@ dramatically lowers the barrier-to-entry for other developers wanting to inspect
 # going to views to add class-based views to snippets/views.py
 
 # Refactoring urls for class based views
-urlpatterns = [
-    path('snippets/', views.SnippetList.as_view()),
-    path('snippets/<int:pk>/', views.SnippetDetail.as_view()),
+# urlpatterns = [
+#     path('snippets/', views.SnippetList.as_view()),
+#     path('snippets/<int:pk>/', views.SnippetDetail.as_view()),
     # adding path for user API views
-    path('users/', views.UserList.as_view()),
-    path('users/<int:pk>/', views.UserDetail.as_view()),
+    # path('users/', views.UserList.as_view()),
+    # path('users/<int:pk>/', views.UserDetail.as_view()),
     # now what is remaining is associating a snippet with the respective user, we will now edit the SnippetList class in
     # snippets/views.py to implement this
-]
+    # path('', views.api_root),
+    # path('snippets/<int:pk>/highlight/', views.SnippetHighlight.as_view()),
+    # we now go on to implement hyperlinks for our API at snippets/serializers.py
+# ]
 
-urlpatterns = format_suffix_patterns(urlpatterns)
+# urlpatterns = format_suffix_patterns(urlpatterns)
 
 # Okay, we're done. If you run the development server everything should be working just as before.
 # we are now going to create mixins for our views to implement CRUD without using functions
+
+# let's add url patterns that have names for hyperlinking the APIs
+
+# API endpoints
+urlpatterns = format_suffix_patterns([
+    path('', views.api_root),
+    path('snippets/', views.SnippetList.as_view(), name='snippet-list'),
+    path('snippets/<int:pk>/', views.SnippetDetail.as_view(), name='snippet-detail'),
+    path('snippets/<int:pk>/highlight/', views.SnippetHighlight.as_view(), name='snippet-highlight'),
+    path('users/', views.UserList.as_view(), name='user-list'),
+    path('users/<int:pk>/', views.UserDetail.as_view(), name='user-detail'),
+])
+
+# we are all set, now we need to add some pagination because we are going to get alot of instances from our API
+# we'll do this in the settings file

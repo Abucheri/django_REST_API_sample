@@ -89,3 +89,9 @@ We've now got a fairly fine-grained set of permissions on our Web API, and end p
 the code snippets that they have created. 
 
 """
+
+# after enabling permissions for auth.user in views
+
+# we are going to add relationships and hyperlinked APIs to create relationships between our APIs instead of using
+# the primary key for the reltions
+# we will now return to views.py to add an endpoint root for our API
